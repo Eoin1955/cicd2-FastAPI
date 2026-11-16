@@ -21,9 +21,9 @@ async def submit_order(order: OrderRequest):
         channel = await connection.channel(publisher_confirms=True) 
         queue = await channel.declare_queue("orders_queue", durable=True) 
         message = aio_pika.Message( 
-        body=order.model_dump_json().encode(), 
-        content_type="application/json", 
-        delivery_mode=aio_pika.DeliveryMode.PERSISTENT, 
+            body=order.model_dump_json().encode(), 
+            content_type="application/json", 
+            delivery_mode=aio_pika.DeliveryMode.PERSISTENT, 
         ) 
         await channel.default_exchange.publish(message, routing_key=queue.name) 
-    return {"status": "received", "order_id": order.order_id} 
+    return {"status": "queued", "order_id": order.order_id} 
