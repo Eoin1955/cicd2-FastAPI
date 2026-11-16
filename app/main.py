@@ -14,11 +14,16 @@ class OrderRequest(BaseModel):
     product: str 
     quantity: int 
 
-@app.post("/orders", status_code=200) 
+@app.post("/orders", status_code=202) 
 async def submit_order(order: OrderRequest): 
     connection = await aio_pika.connect_robust(RABBIT_URL) 
     async with connection: 
         channel = await connection.channel(publisher_confirms=True) 
         queue = await channel.declare_queue("orders_queue", durable=True) 
-
-    ##return {"status": "received", "order_id": order.order_id} 
+        message = aio_pika.Message( 
+        body=order.model_dump_json().encode(), 
+        content_type="application/json", 
+        delivery_mode=aio_pika.DeliveryMode.PERSISTENT, 
+        ) 
+        await channel.default_exchange.publish(message, routing_key=queue.name) 
+    return {"status": "received", "order_id": order.order_id} 
